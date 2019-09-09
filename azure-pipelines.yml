@@ -1,37 +1,61 @@
-# ASP.NET
-# Build and test ASP.NET projects.
-# Add steps that publish symbols, save build artifacts, deploy, and more:
-# https://docs.microsoft.com/azure/devops/pipelines/apps/aspnet/build-aspnet-4
-
+# No automatic build triggering.
 trigger:
-- master
+  branches:
+    exclude:
+      - '*'
 
 pool:
-  vmImage: 'windows-latest'
+  vmImage: 'vs2017-win2016'
+strategy:
+  matrix:
+    Python36:
+      python.version: '3.6'
 
-variables:
-  solution: '**/*.sln'
-  buildPlatform: 'Any CPU'
-  buildConfiguration: 'Release'
+variables: 
+  artifact_dir: $(Build.ArtifactStagingDirectory)\build
 
 steps:
-- task: NuGetToolInstaller@1
-
-- task: NuGetCommand@2
+- task: UsePythonVersion@0
   inputs:
-    restoreSolution: '$(solution)'
+    versionSpec: '$(python.version)'
+  displayName: 'Use Python $(python.version)'
 
-- task: VSBuild@1
-  inputs:
-    solution: '$(solution)'
-    msbuildArgs: '/p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:PackageLocation="$(build.artifactStagingDirectory)"'
-    platform: '$(buildPlatform)'
-    configuration: '$(buildConfiguration)'
+- script: |
+    echo $(Build.ArtifactStagingDirectory)
+    dir /s
+  displayName: 'debug'
 
-- task: VSTest@2
+- script: |
+    python -m pip install --upgrade pip
+    pip install conan
+  displayName: 'Install build dependencies'
+
+- task: BatchScript@1
   inputs:
-    platform: '$(buildPlatform)'
-    configuration: '$(buildConfiguration)'
+    filename: 'build.cmd'
+  displayName: 'build'
+
+- script: |
+    copy .\build\_CPack_Packages\win64\ZIP\*.zip $(Build.ArtifactStagingDirectory)\_build
+  displayName: "Copy build artifact to Artifact Staging Directory."
+
+- task: PublishTestResults@2
+  inputs:
+    testResultsFormat: 'JUnit'
+    testResultsFiles: '*.xml'
+    searchFolder: $(Build.SourcesDirectory)/build/bin
+
+- script: |
+    test_exe.exe -r junit -o test_exe.xml
+  workingDirectory: build/bin
+  displayName: 'run test exe'
+
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: build\_CPack_Packages\win64\ZIP
+    ArtifactName: 'CPack'
+    publishLocation: 'Container'
 
 - task: UniversalPackages@0
   inputs:
