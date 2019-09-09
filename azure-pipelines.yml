@@ -30,14 +30,6 @@ steps:
     pip install conan
   displayName: 'Install build dependencies'
 
-- task: BatchScript@1
-  inputs:
-    filename: 'build.cmd'
-  displayName: 'build'
-
-- script: |
-    copy .\build\_CPack_Packages\win64\ZIP\*.zip $(Build.ArtifactStagingDirectory)\_build
-  displayName: "Copy build artifact to Artifact Staging Directory."
 
 - task: PublishTestResults@2
   inputs:
@@ -51,11 +43,6 @@ steps:
   displayName: 'run test exe'
 
 
-- task: PublishBuildArtifacts@1
-  inputs:
-    PathtoPublish: build\_CPack_Packages\win64\ZIP
-    ArtifactName: 'CPack'
-    publishLocation: 'Container'
 
 - task: UniversalPackages@0
   inputs:
