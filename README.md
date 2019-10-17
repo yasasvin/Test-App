@@ -5,3 +5,5 @@ This is a CRUD application. Back end is ASP.Net 4 with a code first model. Jquer
 ## Getting Started
 
 Fork this project and open using Visual studio
+
+This template can be usefull as a MVC application starter.
